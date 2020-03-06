@@ -22,13 +22,74 @@ source("./_import/03_import_eyelink.R")
 
 
 
-### Summarize and aggregate basic info from eye tracking data ###
+### Summarize and aggregate misc info from eye tracking data ###
 
 # Aggregate EDF metadata into a data frame to check settings
 
 eye_info <- map_df(asc_ids, function(i) {
-  eyedat[[i]]$info
+  df <- eyedat[[i]]$info
+  df <- add_column(df, id = i, .before = 1)
+  df
 })
+
+
+# Get EyeLink validation information for each study block/participant
+
+validation_info <- map_df(asc_ids, function(i) {
+
+  asc <- eyedat[[i]]
+
+  # Define column names & types
+  colnames <- c(
+    "type", "eyes", "eye", "quality", "avg.err", "max.err",
+    "err.deg", "offset.x", "offset.y"
+  )
+  coltypes <- "ccccddddd"
+
+  # Get all validation lines in ASC messages
+  is_val <- grepl("VALIDATION(?!.*ABORTED)", asc$msg$text, perl = TRUE)
+  val <- asc$msg$text[is_val]
+  while (length(val) < 2) {
+    val <- c(val, "")
+  }
+
+  # Sanitize validation summary lines before parsing
+  val_regex <- "!CAL\\s+|VALIDATION|ERROR|avg\\.|max|OFFSET|deg\\.| pix\\."
+  val <- str_replace_all(val, ",", "  ")
+  val <- str_replace_all(val, val_regex, "")
+
+  # Read sanitized validation summary lines into dataframe
+  df <- read_table2(val, col_names = colnames, col_types = coltypes)
+  df <- add_column(df, time = asc$msg$time[is_val], .before = 1)
+  df <- add_column(df, block = asc$msg$block[is_val], .before = 1)
+  df <- add_column(df, id = i, .before = 1)
+
+  df
+})
+validation_info$type <- as.factor(validation_info$type)
+validation_info$eyes <- as.factor(validation_info$eyes)
+validation_info$quality <- as.factor(validation_info$quality)
+
+recalibration_info <- validation_info %>%
+  # Get number of recalibrations for each block / id
+  group_by(id, block) %>%
+  summarize(calibrations = n()) %>%
+  ungroup()
+
+last_validation_info <- validation_info %>%
+  # Get final validation for ecah block / id
+  group_by(id, block) %>%
+  filter(row_number() == n()) %>%
+  ungroup()
+
+
+# Filter between-block events from eye data
+
+for (i in asc_ids) {
+  for (n in c("fix", "sacc", "msg")) {
+    eyedat[[i]][[n]] <- subset(eyedat[[i]][[n]], block %% 1 == 0)
+  }
+}
 
 
 # Get ids of participants who have more or less than 150 trials
@@ -43,11 +104,11 @@ subset(eye_trials, blocks != 150)
 # Get ids of participants who have fixations on less than 150 trials
 # (indicates calibration issues for participant)
 
-eye_trials <- map_df(asc_ids, function(i) {
+fix_trials <- map_df(asc_ids, function(i) {
   eyedat[[i]]$fix %>%
     summarize(id = i, blocks = length(unique(block)))
 })
-subset(eye_trials, blocks < 150)
+subset(fix_trials, blocks < 150)
 
 
 

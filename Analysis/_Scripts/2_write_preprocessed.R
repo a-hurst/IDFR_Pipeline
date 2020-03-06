@@ -12,9 +12,20 @@ source("./_functions/visualization.R")
 
 
 
-### Write out fixation and saccade data to .csvs for each participant ###
+### Write out EyeLink info ###
 
 dir.create(file.path("csv_out"), showWarnings = FALSE)
+dir.create(file.path("csv_out", "eyelink_info"), showWarnings = FALSE)
+elinfo_path <- "./csv_out/eyelink_info/"
+
+write_csv(eye_info, paste0(elinfo_path, "eyelink_settings.csv"))
+write_csv(recalibration_info, paste0(elinfo_path, "recalibration_counts.csv"))
+write_csv(last_validation_info, paste0(elinfo_path, "validation_info.csv"))
+
+
+### Write out fixation and saccade data to .csvs for each participant ###
+
+
 dir.create(file.path("csv_out", "fixations"), showWarnings = FALSE)
 dir.create(file.path("csv_out", "saccades"), showWarnings = FALSE)
 
@@ -29,16 +40,18 @@ for (id in unique(sacc_in_aoi$id)) {
 }
 
 
-### Write out task data for each participant ###
+### Write out task data for all participants ###
 
-write_csv(studydat1, paste0("./csv_out/", id, "taskdata_encoding.csv"))
-write_csv(testdat1, paste0("./csv_out/", id, "taskdata_recognition.csv"))
-write_csv(ratingdat1, paste0("./csv_out/", id, "taskdata_ratings.csv"))
+dir.create(file.path("csv_out", "task"), showWarnings = FALSE)
+
+write_csv(studydat1, paste0("./csv_out/task/", "taskdata_encoding.csv"))
+write_csv(testdat1, paste0("./csv_out/task/", "taskdata_recognition.csv"))
+write_csv(ratingdat1, paste0("./csv_out/task/", "taskdata_ratings.csv"))
 
 
 ### Write out AOI area data ###
 
-write_csv(ratingdat1, paste0("./csv_out/", id, "aoi_areas_per_image.csv"))
+write_csv(aoi_areas, paste0("./csv_out/", "aoi_areas_per_image.csv"))
 
 
 ### Write out images with AOIs overlayed for each face ###

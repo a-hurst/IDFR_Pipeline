@@ -31,7 +31,7 @@ if (file.exists("eyedata.Rds")) {
   # Otherwise, import all raw .asc files and cache them
   eyedat <- lapply(ascs, function(f) {
     cat(paste0("Importing ", basename(f), "...\n"))
-    read.asc(f, samples = FALSE)
+    read.asc(f, samples = FALSE, parse_all = TRUE)
   })
   names(eyedat) <- asc_ids
   saveRDS(eyedat, file = "eyedata.Rds")
