@@ -66,10 +66,18 @@ for f in folders:
             
     # Check for weirdnesses in data for any IDs (mismatch between id and version)
     stimfiles = [n for n in os.listdir(rawdir_id) if '.dat' in n]
-    id_version = int(f.split('_')[-1][0]) # first digit of participant id
+    id_num = f.split('_')[-1] # id number (e.g. 123) as string
+    id_version = int(id_num[0]) # first digit of participant id
     stimdat_version = int(stimfiles[0].split('.')[0][-1]) # version from stimfile
     if id_version != stimdat_version:
-        weird.append(f)
+        id_num = str(stimdat_version) + id_num[1:]
+        new_id = 'idfr_' + id_num
+        new_outdir_id = os.path.join(outdir, new_id)
+        os.rename(outdir_id, new_outdir_id)
+        outdir_id = new_outdir_id
+        ascname = new_id + '.asc'
+        asc_outpath = os.path.join(outdir_id, edfname.split('.')[0] + '.asc')
+        weird.append("{0} -> {1}".format(f, new_id))
             
     # Convert EDF to ASC and save to output directory
     print("\n\n=== Converting '{0}' to ASC... ===".format(edfname))
@@ -85,10 +93,6 @@ for f in folders:
     if edfname.split('.')[0] != ascname.split('.')[0]:
         os.rename(asc_outpath, os.path.join(outdir_id, ascname))
         
-    # If id/version mismatch, set aside data in exclude folder
-    if id_version != stimdat_version:
-        shutil.move(outdir_id, os.path.join(excludedir, f))
-
 
 if len(missing):
     print("\n\nMissing EDF files for the following participants:\n")
@@ -101,7 +105,7 @@ if len(renamed):
         print(" - {0}".format(i))
         
 if len(weird):
-    print("\n\nThe following ids were excluded due to version/id mismatch:\n")
+    print("\n\nThe following ids were renamed due to version/id mismatch:\n")
     for i in weird:
         print(" - {0}".format(i))
 
