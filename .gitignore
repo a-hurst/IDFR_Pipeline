@@ -1,0 +1,11 @@
+**/.*
+**/*.csv
+**/*.zip
+**/*.png
+**/*.bmp
+**/*.Rds
+Analysis/_Data
+Analysis/_Exclude
+!.gitignore
+Raw
+Experiment Code
