@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import subprocess as sp
+from zipfile import ZipFile, ZIP_DEFLATED
 
 # NOTE: This script assumes the 'edf2asc' command-line tool from
 # the EyeLink Developer Kit is installed to your path (e.g. copied
@@ -92,7 +93,14 @@ for f in folders:
     # If EDF name mismatches participant id from folder, rename it
     if edfname.split('.')[0] != ascname.split('.')[0]:
         os.rename(asc_outpath, os.path.join(outdir_id, ascname))
+    asc_outpath = os.path.join(outdir_id, ascname)
         
+    # Finally, compress the .ASC as .zip to save space, since readr supports this
+    zip_outpath = asc_outpath + '.zip'
+    with ZipFile(zip_outpath, 'w', compression=ZIP_DEFLATED) as zf:
+        zf.write(asc_outpath, arcname = ascname)
+    os.remove(asc_outpath)
+
 
 if len(missing):
     print("\n\nMissing EDF files for the following participants:\n")

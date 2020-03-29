@@ -15,11 +15,11 @@ library(purrr)
 # Get full list of .asc files and correspondings ids
 
 ascs <- list.files(
-  "../_Data", pattern = "*.asc",
+  "../_Data", pattern = "*.asc.zip",
   full.names = TRUE, recursive = TRUE
 )
 #ascs <- ascs[1:6] # for testing on subset
-asc_ids <- gsub(".asc", "", basename(ascs))
+asc_ids <- gsub(".asc.zip", "", basename(ascs))
 
 
 # Actually import .asc files 
