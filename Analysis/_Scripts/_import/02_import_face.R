@@ -22,9 +22,8 @@ test_size <- c(445, 624) # size of test images (smaller than encoding images)
 faceinfo <- a %>%
   mutate(oval_success = !is.na(oval_w), face_success = !is.na(x_0)) %>%
   select(c(
-    image, img_w, img_h, detector, confidence, oval_success, face_success
+    image, img_w, img_h, oval_success, face_success
   ))
-faceinfo$detector <- as.factor(faceinfo$detector)
 
 
 
@@ -55,7 +54,7 @@ landmarks <- a %>%
 
 coord_cols <- which(grepl("^x_|^y_", names(landmarks)))
 landmarks <- landmarks %>%
-  gather(coord_cols, key = "coord", value = "val") %>%
+  gather(all_of(coord_cols), key = "coord", value = "val") %>%
   separate("coord", into = c("xy", "point"), sep = "_", convert = TRUE) %>%
   spread("xy", "val")
 

@@ -4,13 +4,17 @@ import csv
 import shutil
 
 import cv2
-import pyopenface as of
+from mediapipe.python.solutions.face_mesh import FaceMesh
+from mediapipe2dlib import LM68_ALL, LM68_EXT
+
+#faceModule = mediapipe.solutions.face_mesh
+
 
 
 ######################################################################
 # This script processes all images in the '_images' directory in the
 # same folder, attempts to extract the bounding ovals from each image
-# using OpenCV contour detection and facial landmarks using OpenFace,
+# using OpenCV contour detection and facial landmarks using MediaPipe,
 # and returns a .csv file with the results.
 #
 # To view the detected ovals and landmarks overlayed on each image,
@@ -21,17 +25,12 @@ outfile = 'facedata.csv'
 output_images = True
 outdir = '_processed'
 
+# Select the desired landmark set (68-landmark or 68-landmark extended)
+landmark_set = LM68_ALL
+
 # Remove image folder if it already exists and we're generating new ones
 if output_images and os.path.exists(outdir):
     shutil.rmtree(outdir)
-
-# Initialize OpenFace models
-print('\n=== Initializing OpenFace Parameters ===\n')
-p = of.FaceParams()
-print('\n=== Initializing OpenFace Model ===\n')
-mod = of.FaceModel()
-det_order = [of.MTCNN_DETECTOR, of.HAAR_DETECTOR, of.HOG_SVM_DETECTOR]
-det_names = ["HAAR", "HOG_SVM", "MTCNN"]
 
 # Get list of all .bmp images in the input folder
 imgdir = os.path.join(os.getcwd(), '_images')
@@ -54,10 +53,9 @@ kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernelsize, kernelsize))
 # Initialize .csv header and rows
 header = [
     'image', 'img_w', 'img_h',
-    'oval_cx', 'oval_cy', 'oval_w', 'oval_h',
-    'detector', 'confidence'
+    'oval_cx', 'oval_cy', 'oval_w', 'oval_h'
 ]
-for i in range(0, 68):
+for i in range(0, len(landmark_set)):
     header += ['x_{0}'.format(i), 'y_{0}'.format(i)]
 missing = 'NA'
 rows = [header]
@@ -107,42 +105,31 @@ for f in imgfiles:
     x, y, w, h = (x1, y1, x2-x1, y2-y1)
     oval_success = x2 != 0 and y2 != 0
     
-    # Try to detect face bounds in image using OpenFace, starting with best (MTCNN) and
-    # falling back to others (HAAR, HOG_SVN) if the first fails to detect a face.
-    # If all three detectors fail, just use detected oval bounds as a last resort.
-    bbox = None
-    for det in det_order:
-        det_name = det_names[det]
-        confidence, bbox = of.detect_face(gray, mod, face_det = det)
-        if bbox != None:
-            break
-    if not bbox:
-        confidence = None
-        if oval_success:
-            det_name = "oval"
-            bbox = (x, y, w, h)
-        else:
-            det_name = "none"
-    
-    # Once face bounding box has been determined, extract landmarks from image w/ OpenFace
-    landmarks = of.detect_landmarks(gray, mod, p, bbox = bbox) if bbox else []
+    # Extract landmarks from image w/ MediaPipe
+    landmarks = []
+    with FaceMesh(static_image_mode=True, refine_landmarks=True) as face:
+        results = face.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        if results.multi_face_landmarks != None:
+            landmarks_raw = results.multi_face_landmarks[0].landmark
+            for j in landmark_set:
+                lx = landmarks_raw[j].x * img.shape[1]
+                ly = landmarks_raw[j].y * img.shape[0]
+                landmarks.append((lx, ly))
+
     
     # Pre-process collected data for later writing to .csv
-    confidence = round(confidence, 3) if confidence else missing
     row = [f, img.shape[1], img.shape[0]]
     if oval_success:
         cx, cy = (round(x + w / 2.0, 3), round(y + h / 2.0, 3))
         row = row + [cx, cy, w, h]
     else:
         row = row + [missing] * 4
-    row = row + [det_name, confidence]
     if landmarks:
-        halflen = int(len(landmarks)/ 2)
-        for l in range(0, halflen, 1):
-            row.append(round(landmarks[l], 3)) # x
-            row.append(round(landmarks[l+halflen], 3)) # y
+        for lm in landmarks:
+            row.append(round(lm[0], 3)) # x
+            row.append(round(lm[1], 3)) # y
     else:
-        row = row + [missing] * (68 * 2)
+        row = row + [missing] * (len(landmark_set) * 2)
     rows.append(row)
     if not (oval_success and landmarks):
         failures.append(f)
@@ -155,10 +142,9 @@ for f in imgfiles:
             size = (int(w / 2), int(h / 2))
             out = cv2.ellipse(out, center, size, 0, 0, 360, (0, 255, 0), 2, cv2.LINE_AA)
         if landmarks:
-            halflen = int(len(landmarks)/ 2)
-            for l in range(0, halflen, 1):
-                x, y = (int(landmarks[l]), int(landmarks[l+halflen]))
-                out = cv2.circle(out, (x, y), 3, (0, 0, 255), -1, cv2.LINE_AA)
+            for lm in landmarks:
+                lm_int = [int(i) for i in lm]
+                out = cv2.circle(out, lm_int, 3, (0, 0, 255), -1, cv2.LINE_AA)
         # Write out image to output directory
         if not os.path.isdir(outdir):
             os.mkdir(outdir)

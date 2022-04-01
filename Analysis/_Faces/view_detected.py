@@ -1,6 +1,9 @@
 import os
+import sys
 import cv2
-import pyopenface as of
+from mediapipe.python.solutions.face_mesh import FaceMesh
+from mediapipe2dlib import LM68_ALL, LM68_EXT
+
 
 ### Keys ###
 # Esc: Exit
@@ -14,15 +17,17 @@ import pyopenface as of
 # x : Decrease upper bound of Canny edge detection filter
 # d : Increase sigmaColor parameter of blur filter
 # c : Decrease sigmaColor parameter of blur filter
-
-p = of.FaceParams()
-mod = of.FaceModel()
-det_order = [of.MTCNN_DETECTOR, of.HAAR_DETECTOR, of.HOG_SVM_DETECTOR]
+# q : Toggle all MediaPipe landmarks vs desired subset
+# w : Toggle face landmark refinement in MediaPipe
+# t : Toggle landmark indices overlayed on the landmarks
 
 imgdir = os.path.join(os.getcwd(), '_images')
 imgfiles = os.listdir(imgdir)
 imgfiles = [f for f in imgfiles if '_Encoding.bmp' in f]
 numfiles = len(imgfiles)
+
+# Select the desired landmark set (68-landmark or 68-landmark extended)
+landmark_set = LM68_ALL
 
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 8))
 
@@ -33,6 +38,10 @@ canny_lo = 25
 canny_hi = 200
 i = 0
 showtype = 0 # 0 = ellipse, 1 = dilation, 2 = blur, 3 = canny
+refine = True
+show_all = False
+show_text = False
+
 testing = True
 while testing:
     
@@ -68,21 +77,22 @@ while testing:
     out = cv2.ellipse(img, center, (int(w / 2), int(h / 2)), 0, 0, 360, (0, 255, 0), 2)
     
     if showtype % 4 == 0: # only do this if looking at final out image
-        bbox = None
-        for det in det_order:
-            confidence, bbox = of.detect_face(gray, mod, face_det = det)
-            if bbox != None:
-                break
-                
-        if not bbox:
-            bbox = (x, y, w, h) # use ellipse rectangle for face region
-            
-        landmarks = of.detect_landmarks(gray, mod, p, bbox = bbox)
-        if landmarks:
-            halflen = int(len(landmarks)/ 2)
-            for l in range(0, halflen, 1):
-                x, y = (int(landmarks[l]), int(landmarks[l+halflen]))
-                out = cv2.circle(out, (x, y), 3, (0, 0, 255), -1, cv2.LINE_AA)
+        with FaceMesh(static_image_mode=True, refine_landmarks=refine) as face:
+            results = face.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            landmarks = results.multi_face_landmarks[0].landmark
+            for j in range(len(landmarks)):
+                if j not in landmark_set:
+                    if not show_all:
+                        continue
+                lx = int(landmarks[j].x * img.shape[1])
+                ly = int(landmarks[j].y * img.shape[0])
+                out = cv2.circle(out, (lx, ly), 3, (255, 255, 255), -1, cv2.LINE_AA)
+                if show_text:
+                    if not show_all:
+                        j = landmark_set.index(j)
+                    out = cv2.putText(
+                        out, str(j), (lx, ly), 0, 0.3, (255, 0,0), 1, cv2.LINE_AA
+                    )
     
     imglist = [out, img_dilation, blur, edged]
     cv2.imshow('image', imglist[showtype % 4])
@@ -108,5 +118,11 @@ while testing:
         sigmaColor = sigmaColor + 1
     elif key == 112: # p
         print(imgfiles[i], d, sigmaColor, sigmaSpace, canny_lo, canny_hi)
+    elif key == 113: # q
+        show_all = show_all != True
+    elif key == 119: # w
+        refine = refine != True
+    elif key == 116: # t
+        show_text = show_text != True
     elif key == 92: # \
         showtype += 1
