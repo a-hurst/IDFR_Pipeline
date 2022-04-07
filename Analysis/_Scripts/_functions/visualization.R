@@ -6,6 +6,7 @@
 ### Import required libraries ###
 
 library(bmp)
+library(purrr)
 library(ggplot2)
 library(ggforce) # for drawing ovals
 library(ggpubr) # for background images
@@ -26,23 +27,22 @@ plot_face <- function(imagename, imagedir, landmark_dat, oval_dat, aois) {
   # Get oval and landmark data for face
   ov <- subset(oval_dat, image == imagename)
   z <- subset(landmark_dat, image == imagename)
-  z$aoi <- NA
 
   # Use landmark data to create new df of AOI points in correct sequences
-  dat <- subset(z, image != imagename)
-  for (aoi in names(aois)) {
+  dat <- map_df(names(aois), function(aoi) {
     aoi_rows <- match(aois[[aoi]], z$point)
-    z$aoi[aoi_rows] <- aoi
-    dat <- bind_rows(dat, z[aoi_rows, ])
-  }
+    df <- z[aoi_rows, ]
+    df$aoi <- aoi
+    df
+  })
 
   # Plot AOIs and oval from provided data on face image
   ggplot(dat, aes(x = x, y = y, group = aoi, color = aoi, fill = aoi)) +
     background_image(img) +
     geom_ellipse(aes(
-      x0 = ov$cx, y0 = ov$cy, a = ov$w / 2, b = ov$h / 2, angle = 0,
+      x0 = cx, y0 = cy, a = w / 2, b = h / 2, angle = 0,
       fill = "oval", color = "oval"
-    ), alpha = 0.01) +
+    ), alpha = 0.2, data = ov, inherit.aes = FALSE) +
     geom_polygon(alpha = 0.4) +
     geom_point() +
     scale_x_continuous(expand = c(0, 0), limits = c(0, z$img_w[1])) +

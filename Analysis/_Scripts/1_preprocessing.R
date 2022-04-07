@@ -12,6 +12,8 @@ library(tibble)
 
 source("./_functions/aoi_functions.R")
 
+options(readr.show_progress = FALSE)
+
 
 
 ### Import task, face, and eyelink data ###
@@ -59,7 +61,7 @@ validation_info <- map_df(asc_ids, function(i) {
   val <- str_replace_all(val, val_regex, "")
 
   # Read sanitized validation summary lines into dataframe
-  df <- read_table2(val, col_names = colnames, col_types = coltypes)
+  df <- read_table(val, col_names = colnames, col_types = coltypes)
   df <- add_column(df, time = asc$msg$time[is_val], .before = 1)
   df <- add_column(df, block = asc$msg$block[is_val], .before = 1)
   df <- add_column(df, id = i, .before = 1)
