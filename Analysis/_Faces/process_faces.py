@@ -26,7 +26,7 @@ output_images = True
 outdir = '_processed'
 
 # Select the desired landmark set (68-landmark or 68-landmark extended)
-landmark_set = LM68_ALL
+landmark_set = LM68_EXT
 
 # Remove image folder if it already exists and we're generating new ones
 if output_images and os.path.exists(outdir):

@@ -2,7 +2,7 @@ import os
 import sys
 import cv2
 from mediapipe.python.solutions.face_mesh import FaceMesh
-from mediapipe2dlib import LM68_ALL, LM68_EXT
+from mediapipe2dlib import LM68_ALL, LM68_EXT, LM68_EXT_NO_MOUTH
 
 
 ### Keys ###
@@ -27,7 +27,7 @@ imgfiles = [f for f in imgfiles if '_Encoding.bmp' in f]
 numfiles = len(imgfiles)
 
 # Select the desired landmark set (68-landmark or 68-landmark extended)
-landmark_set = LM68_ALL
+landmark_set = LM68_EXT_NO_MOUTH
 
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 8))
 
@@ -82,7 +82,7 @@ while testing:
             landmarks = results.multi_face_landmarks[0].landmark
             for j in range(len(landmarks)):
                 if j not in landmark_set:
-                    if not show_all:
+                    if j > 300 or not show_all:
                         continue
                 lx = int(landmarks[j].x * img.shape[1])
                 ly = int(landmarks[j].y * img.shape[0])
