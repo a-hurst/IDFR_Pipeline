@@ -5,7 +5,7 @@ import shutil
 
 import cv2
 from mediapipe.python.solutions.face_mesh import FaceMesh
-from mediapipe2dlib import LM68_ALL, LM68_EXT
+from _mediapipe2dlib import LM68_ALL, LM68_EXT
 
 #faceModule = mediapipe.solutions.face_mesh
 
