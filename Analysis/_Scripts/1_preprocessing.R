@@ -304,6 +304,13 @@ aois_poly <- generate_aois(image_index$image, landmarks, aoi_defs)
 
 # Calculate areas of each ROI for each face image
 
+oval_areas <- ovals %>%
+  mutate(
+    aoi = "face",
+    area = w * h * pi,
+  ) %>%
+  select(c(image, aoi, area))
+
 aoi_areas <- map_df(names(aois_poly), function(img) {
   df <- enframe(st_area(aois_poly[[img]]))
   df$name <- names(aois_poly[[img]])
@@ -311,6 +318,16 @@ aoi_areas <- map_df(names(aois_poly), function(img) {
   df <- add_column(df, image = img, .before = 1)
   df
 })
+
+aoi_areas <- aoi_areas %>%
+  bind_rows(oval_areas) %>%
+  spread(aoi, area) %>%
+  group_by(image) %>%
+  mutate(
+    face_only = face - (eye_region_l + eye_region_r + nasion + nose + mouth)
+  ) %>%
+  gather(-image, key = "aoi", value = "area") %>%
+  arrange(image)
 
 
 
