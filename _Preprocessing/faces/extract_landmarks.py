@@ -7,10 +7,6 @@ import cv2
 from mediapipe.python.solutions.face_mesh import FaceMesh
 from _mediapipe2dlib import LM68_ALL, LM68_EXT
 
-#faceModule = mediapipe.solutions.face_mesh
-
-
-
 ######################################################################
 # This script processes all images in the '_images' directory in the
 # same folder, attempts to extract the bounding ovals from each image
@@ -21,9 +17,16 @@ from _mediapipe2dlib import LM68_ALL, LM68_EXT
 # you can use the 'view_detected.py' script.
 ######################################################################
 
-outfile = 'facedata.csv'
+
 output_images = True
-outdir = '_processed'
+outfile_name = 'facedata.csv'
+
+# Set paths for script
+script_root = os.path.abspath(os.path.dirname(__file__))
+pipeline_root = os.path.realpath(os.path.join(script_root, '..', '..'))
+data_dir = os.path.join(pipeline_root, "_Data")
+imgdir = os.path.join(script_root, '_images')
+outdir = os.path.join(script_root, '_landmarks') # Landmark overlay folder
 
 # Select the desired landmark set (68-landmark or 68-landmark extended)
 landmark_set = LM68_EXT
@@ -33,7 +36,6 @@ if output_images and os.path.exists(outdir):
     shutil.rmtree(outdir)
 
 # Get list of all .bmp images in the input folder
-imgdir = os.path.join(os.getcwd(), '_images')
 imgfiles = os.listdir(imgdir)
 imgfiles = [f for f in imgfiles if '_Encoding.bmp' in f]
 numfiles = len(imgfiles)
@@ -160,13 +162,16 @@ for f in imgfiles:
         pct = pct_complete
         
 
-# Write recorded data out to a .csv file
-if os.path.exists(outfile):
-    os.remove(outfile)
-with io.open(outfile, 'w', encoding='utf-8') as dat:
-    writer = csv.writer(dat)
-    for row in rows:
-        writer.writerow(row)
+# Write processed landmark data to .csv
+local_outfile = os.path.join(script_root, outfile_name)
+data_outfile = os.path.join(data_dir, outfile_name)
+for outfile in [local_outfile, data_outfile]:
+    if os.path.exists(outfile):
+        os.remove(outfile)
+    with io.open(outfile, 'w', encoding='utf-8') as dat:
+        writer = csv.writer(dat)
+        for row in rows:
+            writer.writerow(row)
 
 # Write out completion/failures messages
 if len(failures):

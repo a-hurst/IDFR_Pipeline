@@ -21,7 +21,8 @@ from _mediapipe2dlib import LM68_ALL, LM68_EXT, LM68_EXT_NO_MOUTH
 # w : Toggle face landmark refinement in MediaPipe
 # t : Toggle landmark indices overlayed on the landmarks
 
-imgdir = os.path.join(os.getcwd(), '_images')
+script_root = os.path.abspath(os.path.dirname(__file__))
+imgdir = os.path.join(script_root, '_images')
 imgfiles = os.listdir(imgdir)
 imgfiles = [f for f in imgfiles if '_Encoding.bmp' in f]
 numfiles = len(imgfiles)
