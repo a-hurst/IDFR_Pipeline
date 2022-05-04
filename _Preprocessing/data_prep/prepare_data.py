@@ -13,13 +13,11 @@ from zipfile import ZipFile, ZIP_DEFLATED
 # to run it yourself unless you really want to.
 
 
-rawdir = 'Raw'
-outdir = '_Data'
-excludedir = '_Exclude'
+rawdir = 'raw'
+outdir = 'cleaned'
 
 outdir = os.path.join(os.getcwd(), outdir)
-excludedir = os.path.join(os.getcwd(), excludedir)
-for d in [outdir, excludedir]:
+for d in [outdir]:
     if os.path.isdir(d):
         shutil.rmtree(d)
     os.mkdir(d)
