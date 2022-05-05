@@ -84,7 +84,7 @@ plot_aois <- function(imagename, imagedir, aoi_dat) {
 
 
 #' Plots the fixations for a given participant/trial over top of the
-#' face image for that trial, colour-coding fixation points by the 
+#' face image for that trial, colour-coding fixation points by the
 #' AOI (if any) they fall into.
 plot_fix <- function(trial, id, imagedir, fixdat) {
 
@@ -97,18 +97,20 @@ plot_fix <- function(trial, id, imagedir, fixdat) {
   img <- read.bmp(imgpath) / 255
 
   # Determine AOI for each fixation
-  f$aoi <- ifelse(f$on_face,
-    ifelse(f$on_eye_l, "eye_l",
-      ifelse(f$on_eye_r, "eye_r",
-        ifelse(f$on_nose, "nose",
-          ifelse(f$on_nasion, "nasion",
-            ifelse(f$on_mouth, "mouth", "face")
-          )
-        )
+  f <- f %>%
+    mutate(
+      aoi = case_when(
+        on_eye_l ~ "eye_l",
+        on_eye_r ~ "eye_r",
+        on_eye_region_l ~ "eye_region_l",
+        on_eye_region_r ~ "eye_region_r",
+        on_nose ~ "nose",
+        on_nasion ~ "nasion",
+        on_mouth ~ "mouth",
+        on_face ~ "face",
+        TRUE ~ "none"
       )
-    ),
-  "none"
-  )
+    )
 
   # Plot colour-coded fixations from provided data on face image
   ggplot(f, aes(x = axp - offset_x, y = ayp - offset_y, color = aoi)) +
@@ -123,7 +125,7 @@ plot_fix <- function(trial, id, imagedir, fixdat) {
 
 
 #' Plots the saccades for a given participant/trial over top of the
-#' face image for that trial, colour-coding saccade arrows by the 
+#' face image for that trial, colour-coding saccade arrows by the
 #' AOI (if any) they end in.
 plot_sacc <- function(trial, id, imagedir, saccdat) {
 
@@ -136,18 +138,20 @@ plot_sacc <- function(trial, id, imagedir, saccdat) {
   img <- read.bmp(imgpath) / 255
 
   # Determine AOI for each saccade end
-  s$aoi <- ifelse(s$end_on_face,
-    ifelse(s$end_on_eye_l, "eye_l",
-      ifelse(s$end_on_eye_r, "eye_r",
-        ifelse(s$end_on_nose, "nose",
-          ifelse(s$end_on_nasion, "nasion",
-            ifelse(s$end_on_mouth, "mouth", "face")
-          )
-        )
+  s <- s %>%
+    mutate(
+      aoi = case_when(
+        end_on_eye_l ~ "eye_l",
+        end_on_eye_r ~ "eye_r",
+        end_on_eye_region_l ~ "eye_region_l",
+        end_on_eye_region_r ~ "eye_region_r",
+        end_on_nose ~ "nose",
+        end_on_nasion ~ "nasion",
+        end_on_mouth ~ "mouth",
+        end_on_face ~ "face",
+        TRUE ~ "none"
       )
-    ),
-  "none"
-  )
+    )
 
   # Plot colour-coded saccades from provided data on face image
   ggplot(s, aes(
@@ -156,7 +160,10 @@ plot_sacc <- function(trial, id, imagedir, saccdat) {
     color = aoi
   )) +
     background_image(img) +
-    geom_segment(arrow = arrow(), size = 1, alpha = 0.7) +
+    geom_segment(
+      arrow = arrow(type = "closed", length = unit(0.1, "inches")),
+      size = 1, alpha = 0.7
+    ) +
     scale_x_continuous(expand = c(0, 0), limits = c(0, ncol(img))) +
     scale_y_reverse(expand = c(0, 0), limits = c(nrow(img), 0)) +
     coord_fixed() +

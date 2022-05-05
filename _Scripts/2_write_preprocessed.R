@@ -18,7 +18,7 @@ outdirs <- list(
   task = "./output/task/",
   eye = "./output/eyelink/",
   fix = "./output/fixations/",
-  sacc = "./output/saccades/", 
+  sacc = "./output/saccades/",
   img = "./output/aoi_images/"
 )
 for (dir in names(outdirs)) {
@@ -28,7 +28,7 @@ for (dir in names(outdirs)) {
 
 ### Write out EyeLink data ###
 
-# Write out eye tracker settings and calibration/validation accuracy 
+# Write out eye tracker settings and calibration/validation accuracy
 
 write_csv(eye_info, paste0(outdirs$eye, "eyelink_settings.csv"))
 write_csv(recalibration_info, paste0(outdirs$eye, "recalibration_counts.csv"))

@@ -22,7 +22,7 @@ ascs <- list.files(
 asc_ids <- gsub(".asc.zip", "", basename(ascs))
 
 
-# Actually import .asc files 
+# Actually import .asc files
 
 if (file.exists("eyedata.Rds")) {
   # If cached eye data already exists, load that to save time

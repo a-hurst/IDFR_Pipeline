@@ -70,7 +70,7 @@ test_landmarks <- landmarks %>%
   )
 test_landmarks$img_w <- test_size[1]
 test_landmarks$img_h <- test_size[2]
-landmarks <- bind_rows(landmarks, test_landmarks) 
+landmarks <- bind_rows(landmarks, test_landmarks)
 
 
 # Separate oval data & calculate ovals for test faces
