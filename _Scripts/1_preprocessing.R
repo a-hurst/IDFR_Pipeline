@@ -10,6 +10,7 @@ library(dplyr)
 library(stringr)
 library(tibble)
 
+source("./_Scripts/_settings.R")
 source("./_Scripts/_functions/aoi_functions.R")
 
 options(readr.show_progress = FALSE)
@@ -282,17 +283,7 @@ for (i in asc_ids) {
 
 ### Generate areas of interest from face landmarks ###
 
-# Define Face AOIs from landmark points
-
-aoi_defs <- list(
-  eye_l = c(36:41, 36),
-  eye_r = c(42:47, 42),
-  eye_region_l = c(17:21, 88:81, 17),
-  eye_region_r = c(22:26, 96:89, 22),
-  nasion = c(21, 22, 89:90, 28, 87:88, 21),
-  nose = c(28, 87, 97:98, 31:35, 100:99, 90, 28),
-  mouth = c(48:59, 48)
-)
+# Define Face AOIs from landmark sequences defined in _settings.R
 
 aois_poly <- generate_aois(image_index$image, landmarks, aoi_defs)
 
