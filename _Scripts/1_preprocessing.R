@@ -118,13 +118,8 @@ subset(fix_trials, blocks < trial_count)
 
 # Get table of images & face ids for each trial/participant
 
-imginfo <- bind_rows(
-  select(studydat1, c(id, trial, image, face_id)),
-  select(testdat1, c(id, trial, image, face_id)),
-  select(ratingdat1, c(id, trial, image, face_id))
-)
-
-imginfo <- imginfo %>%
+imginfo <- trialdat %>%
+  select(c(id, trial, phase, image, face_id)) %>%
   group_by(id) %>%
   arrange(trial, .by_group = TRUE) %>%
   ungroup()
@@ -139,7 +134,7 @@ imginfo <- imginfo %>%
     offset_y = (eye_info$screen.y[1] / 2) - as.integer(img_h / 2)
   ) %>%
   mutate(
-    offset_y = ifelse(trial >= 90, offset_y - 150, offset_y)
+    offset_y = ifelse(phase == "rating", offset_y - 150, offset_y)
   )
 
 
@@ -171,6 +166,12 @@ faceoff_msgs <- c(
   "Trust_Rating_Keyboard"
 )
 
+taskinfo <- bind_rows(
+  select(studydat1, c(id, trial)),
+  select(testdat1, c(id, trial)),
+  select(ratingdat1, c(id, trial))
+)
+
 failed <- map_df(asc_ids, function(i) {
   # Get all trials that had "face off" (i.e. successful trial end) messages,
   # then get the imginfo rows of the trials (if any) that didn't have those
@@ -179,7 +180,7 @@ failed <- map_df(asc_ids, function(i) {
     eyedat[[i]]$msg$text, paste(faceoff_msgs, collapse = "|")
   )
   noerr <- subset(eyedat[[i]]$msg, face_rows)
-  df <- subset(imginfo, id == i & !(trial %in% noerr$block))
+  df <- subset(taskinfo, id == i & !(trial %in% noerr$block))
   df
 })
 
@@ -202,13 +203,11 @@ for (i in unique(failed$id)) {
 
 # Remove missing trials (if any) from eye data
 
-stiminfo <- select(trialdat, c(id, trial))
-
 missing_trials <- map_df(unique(imginfo$id), function(i) {
   # Check for trial numbers in stimulus list but not task data for
   # each participant (indicates aborted trial)
-  stim <- subset(stiminfo, id == i)
-  actual <- subset(imginfo, id == i)$trial
+  stim <- subset(imginfo, id == i)
+  actual <- subset(taskinfo, id == i)$trial
   subset(stim, !(trial %in% actual))
 })
 
