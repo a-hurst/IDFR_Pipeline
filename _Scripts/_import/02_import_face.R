@@ -13,7 +13,7 @@ library(dplyr)
 
 ### Read face data file ###
 
-a <- read_csv("../_Data/facedata.csv", col_types = cols())
+a <- read_csv("./_Data/facedata.csv", col_types = cols())
 test_size <- c(445, 624) # size of test images (smaller than encoding images)
 
 

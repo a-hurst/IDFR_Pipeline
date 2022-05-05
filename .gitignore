@@ -5,4 +5,5 @@
 **/*.bmp
 **/*.Rds
 _Data/idfr*
+output/*
 !.gitignore

@@ -10,7 +10,7 @@ library(dplyr)
 library(stringr)
 library(tibble)
 
-source("./_functions/aoi_functions.R")
+source("./_Scripts/_functions/aoi_functions.R")
 
 options(readr.show_progress = FALSE)
 
@@ -18,9 +18,9 @@ options(readr.show_progress = FALSE)
 
 ### Import task, face, and eyelink data ###
 
-source("./_import/01_import_task.R")
-source("./_import/02_import_face.R")
-source("./_import/03_import_eyelink.R")
+source("./_Scripts/_import/01_import_task.R")
+source("./_Scripts/_import/02_import_face.R")
+source("./_Scripts/_import/03_import_eyelink.R")
 
 
 

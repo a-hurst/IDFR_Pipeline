@@ -8,59 +8,65 @@
 library(readr)
 library(ggplot2)
 
-source("./_functions/visualization.R")
+source("./_Scripts/_functions/visualization.R")
 
 
+### Create output paths ###
 
-### Write out EyeLink info ###
+outdirs <- list(
+  root = "./output/",
+  task = "./output/task/",
+  eye = "./output/eyelink/",
+  fix = "./output/fixations/",
+  sacc = "./output/saccades/", 
+  img = "./output/aoi_images/"
+)
+for (dir in names(outdirs)) {
+  dir.create(file.path(outdirs[[dir]]), showWarnings = FALSE)
+}
 
-dir.create(file.path("csv_out"), showWarnings = FALSE)
-dir.create(file.path("csv_out", "eyelink_info"), showWarnings = FALSE)
-elinfo_path <- "./csv_out/eyelink_info/"
 
-write_csv(eye_info, paste0(elinfo_path, "eyelink_settings.csv"))
-write_csv(recalibration_info, paste0(elinfo_path, "recalibration_counts.csv"))
-write_csv(last_validation_info, paste0(elinfo_path, "validation_info.csv"))
+### Write out EyeLink data ###
+
+# Write out eye tracker settings and calibration/validation accuracy 
+
+write_csv(eye_info, paste0(outdirs$eye, "eyelink_settings.csv"))
+write_csv(recalibration_info, paste0(outdirs$eye, "recalibration_counts.csv"))
+write_csv(last_validation_info, paste0(outdirs$eye, "validation_info.csv"))
 
 
-### Write out fixation and saccade data to .csvs for each participant ###
-
-dir.create(file.path("csv_out", "fixations"), showWarnings = FALSE)
-dir.create(file.path("csv_out", "saccades"), showWarnings = FALSE)
+# Write out fixation and saccade data for each participant
 
 for (id in unique(fix_in_aoi$id)) {
   id_dat <- select(fix_in_aoi[fix_in_aoi$id == id, ], -c(offset_x, offset_y))
-  write_csv(id_dat, paste0("./csv_out/fixations/", id, "_fixations.csv"))
+  write_csv(id_dat, paste0(outdirs$fix, id, "_fixations.csv"))
 }
-
 for (id in unique(sacc_in_aoi$id)) {
   id_dat <- select(sacc_in_aoi[sacc_in_aoi$id == id, ], -c(offset_x, offset_y))
-  write_csv(id_dat, paste0("./csv_out/saccades/", id, "_saccades.csv"))
+  write_csv(id_dat, paste0(outdirs$sacc, id, "_saccades.csv"))
 }
 
 
-### Write out task data for all participants ###
+### Write out trial-by-trial task data ###
 
-dir.create(file.path("csv_out", "task"), showWarnings = FALSE)
-
-write_csv(studydat1, paste0("./csv_out/task/", "taskdata_encoding.csv"))
-write_csv(testdat1, paste0("./csv_out/task/", "taskdata_recognition.csv"))
+write_csv(studydat1, paste0(outdirs$task, "taskdata_encoding.csv"))
+write_csv(testdat1, paste0(outdirs$task, "taskdata_recognition.csv"))
 if (nrow(ratingdat1) > 0) {
-  write_csv(ratingdat1, paste0("./csv_out/task/", "taskdata_ratings.csv"))
+  write_csv(ratingdat1, paste0(outdirs$task, "taskdata_ratings.csv"))
 }
 
 
-### Write out AOI area data ###
+### Write out AOI data ###
 
-write_csv(aoi_areas, paste0("./csv_out/", "aoi_areas_per_image.csv"))
+# Write out the AOI polygon areas for each unique face image
+
+write_csv(aoi_areas, paste0(outdirs$root, "aoi_areas_per_image.csv"))
 
 
-### Write out images with AOIs overlayed for each face ###
+# Write out images with AOIs overlayed for each face
 
-dir.create(file.path("aoi_out"), showWarnings = FALSE)
-
+img_path <- "./_Preprocessing/faces/_images"
 unique_faces <- subset(image_index, str_detect(image, "_Encoding"))$image
-img_path <- "../_Preprocessing/faces/_images"
 
 for (face in unique_faces) {
 
@@ -79,7 +85,7 @@ for (face in unique_faces) {
     )
 
   ggsave(
-    gsub(".bmp", ".png", face), faceplot, path = "./aoi_out/",
+    gsub(".bmp", ".png", face), faceplot, path = outdirs$img,
     width = 5.90, height = 8.32, units = "in", dpi = 100
   )
 

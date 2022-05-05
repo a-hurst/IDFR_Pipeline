@@ -15,12 +15,12 @@ library(dplyr)
 
 ### Read task data files ###
 
-id_dirs <- list.dirs("../_Data", recursive = FALSE)
+id_dirs <- list.dirs("./_Data", recursive = FALSE)
 
 
 # Determine if dataset contains rating data
 
-rating_files <- list.files("../_Data", recursive = TRUE, pattern = "*_RATING*")
+rating_files <- list.files("./_Data", recursive = TRUE, pattern = "*_RATING*")
 has_ratings <- length(rating_files) > 0
 
 
