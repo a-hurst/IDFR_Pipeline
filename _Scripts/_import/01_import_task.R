@@ -18,65 +18,69 @@ library(dplyr)
 id_dirs <- list.dirs("../_Data", recursive = FALSE)
 
 
-# Read study phase data
+# Determine if dataset contains rating data
+
+rating_files <- list.files("../_Data", recursive = TRUE, pattern = "*_RATING*")
+has_ratings <- length(rating_files) > 0
+
+
+# Import and join study, test, and (if present) ratings .dat files
 
 studycols <- c("list", "image", "face_id", "face_gender")
+ratingcols <- c("list", "image", "face_id", "distractor", "face_gender")
+testcols <- c(ratingcols, "correct_resp")
 
-studydat <- map_df(id_dirs, function(d) {
+trialdat <- map_df(id_dirs, function(d) {
+
+  # Import study phase trial data
   studyfile <- list.files(d, full.names = TRUE, pattern = "*actual_STUDY*")
   dat <- read_tsv(studyfile, col_names = studycols, col_types = "cccc")
+  dat <- add_column(dat, distractor = "Target", .after = 3)
+  dat <- add_column(dat, correct_resp = as.numeric(NA), .after = 5)
+  dat <- add_column(dat, phase = "study", .before = 1)
+
+  # Import test phase trial data
+  testfile <- list.files(d, full.names = TRUE, pattern = "*actual_TEST*")
+  tdat <- read_tsv(testfile, col_names = testcols, col_types = "ccccci")
+  tdat <- add_column(tdat, phase = "test", .before = 1)
+  dat <- bind_rows(dat, tdat)
+
+  # Import rating phase trial data (if present)
+  if (has_ratings) {
+    ratingfile <- list.files(d, full.names = TRUE, pattern = "*actual_RATING*")
+    rdat <- read_tsv(ratingfile, col_names = ratingcols, col_types = "ccccc")
+    rdat <- add_column(rdat, correct_resp = as.numeric(NA), .after = 5)
+    rdat <- add_column(rdat, phase = "rating", .before = 1)
+    dat <- bind_rows(dat, rdat)
+  }
+
+  # Add participant IDs and trial numbers
   dat <- add_column(dat, trial = 1:nrow(dat), .before = 1)
   dat <- add_column(dat, id = basename(d), .before = 1)
+
   dat
 })
 
-studydat$id <- as.factor(studydat$id)
-studydat$list <- as.factor(studydat$list)
-studydat$face_id <- as.factor(studydat$face_id)
-studydat$face_gender <- as.factor(studydat$face_gender)
+trialdat <- trialdat %>%
+  mutate(
+    id = as.factor(id),
+    list = as.factor(list),
+    phase = as.factor(phase),
+    face_id = as.factor(face_id),
+    distractor = distractor == "Distractor",
+    face_gender = as.factor(face_gender),
+    correct_resp = as.factor(ifelse(correct_resp == 7, "New", "Old"))
+  )
 
 
-# Read test phase data
+# Get intended trial count for study design
 
-testcols <- c(
-  "list", "image", "face_id", "distractor",
-  "face_gender", "correct_resp"
-)
+trial_count <- trialdat %>%
+  group_by(id) %>%
+  summarize(trialcount = n()) %>%
+  pull(trialcount) %>%
+  median()
 
-testdat <- map_df(id_dirs, function(d) {
-  testfile <- list.files(d, full.names = TRUE, pattern = "*actual_TEST*")
-  dat <- read_tsv(testfile, col_names = testcols, col_types = "ccccci")
-  dat$distractor <- dat$distractor == "Distractor"
-  dat$correct_resp <- ifelse(dat$correct_resp == 7, "New", "Old")
-  dat <- add_column(dat, trial = 1:nrow(dat) + 30, .before = 1)
-  dat <- add_column(dat, id = basename(d), .before = 1)
-  dat
-})
-
-testdat$id <- as.factor(testdat$id)
-testdat$list <- as.factor(testdat$list)
-testdat$face_id <- as.factor(testdat$face_id)
-testdat$face_gender <- as.factor(testdat$face_gender)
-testdat$correct_resp <- as.factor(testdat$correct_resp)
-
-
-# Read rating phase data
-
-ratingcols <- c("list", "image", "face_id", "distractor", "face_gender")
-
-ratingdat <- map_df(id_dirs, function(d) {
-  ratingfile <- list.files(d, full.names = TRUE, pattern = "*actual_RATING*")
-  dat <- read_tsv(ratingfile, col_names = ratingcols, col_types = "ccccc")
-  dat$distractor <- dat$distractor == "Distractor"
-  dat <- add_column(dat, trial = 1:nrow(dat) + 90, .before = 1)
-  dat <- add_column(dat, id = basename(d), .before = 1)
-  dat
-})
-
-ratingdat$id <- as.factor(ratingdat$id)
-ratingdat$list <- as.factor(ratingdat$list)
-ratingdat$face_id <- as.factor(ratingdat$face_id)
-ratingdat$face_gender <- as.factor(ratingdat$face_gender)
 
 
 # Read awful results data
@@ -93,13 +97,17 @@ resultscols <- c(
   # Test phase columns
   "t_list", "t_trial", "t_face_onset", "t_image", "t_face_id",
   "t_face_gender", "t_distractor", "t_correct_resp", "t_response_button",
-  "t_response", "t_resp_type", "t_rt", "t_accuracy", "t_total_correct",
-  # Interphase columns
-  "rating_instr_time", "rating_cal_time", "tr_interphase_time",
-  # Rating phase columns
-  "r_list", "r_trial", "r_face_onset", "r_image", "r_face_id",
-  "r_distractor", "r_face_gender", "r_rt", "r_trust"
+  "t_response", "t_resp_type", "t_rt", "t_accuracy", "t_total_correct"
 )
+if (has_ratings) {
+  resultscols <- c(resultscols,
+    # Interphase columns
+    "rating_instr_time", "rating_cal_time", "tr_interphase_time",
+    # Rating phase columns
+    "r_list", "r_trial", "r_face_onset", "r_image", "r_face_id",
+    "r_distractor", "r_face_gender", "r_rt", "r_trust"
+  )
+}
 
 resultsdat <- map_df(id_dirs, function(d) {
 
@@ -124,20 +132,37 @@ resultsdat <- map_df(id_dirs, function(d) {
 # Participant-level info
 
 participant_info <- resultsdat %>%
-  group_by(id) %>%
-  summarize(
-    version = version[1],
-    eye = eye[1],
-    trials = length(id),
-    st_intervening_task_time = max(st_intervening_task_time),
-    test_instr_time = max(test_instr_time),
-    test_cal_time = max(test_cal_time),
-    st_interphase_time = max(st_interphase_time),
-    total_correct = max(t_total_correct),
-    rating_instr_time = max(rating_instr_time),
-    rating_cal_time = max(rating_cal_time),
-    tr_interphase_time = max(tr_interphase_time)
-  )
+  group_by(id)
+
+if (has_ratings) {
+  participant_info <- participant_info %>%
+    summarize(
+      version = version[1],
+      eye = eye[1],
+      trials = length(id),
+      st_intervening_task_time = max(st_intervening_task_time),
+      test_instr_time = max(test_instr_time),
+      test_cal_time = max(test_cal_time),
+      st_interphase_time = max(st_interphase_time),
+      total_correct = max(t_total_correct),
+      rating_instr_time = max(rating_instr_time),
+      rating_cal_time = max(rating_cal_time),
+      tr_interphase_time = max(tr_interphase_time)
+    )
+} else {
+  participant_info <- participant_info %>%
+    summarize(
+      version = version[1],
+      eye = eye[1],
+      trials = length(id),
+      st_intervening_task_time = max(st_intervening_task_time),
+      test_instr_time = max(test_instr_time),
+      test_cal_time = max(test_cal_time),
+      st_interphase_time = max(st_interphase_time),
+      total_correct = max(t_total_correct)
+    )
+}
+
 participant_info$id <- as.factor(participant_info$id)
 participant_info$eye <- as.factor(participant_info$eye)
 
@@ -160,7 +185,7 @@ studydat1$face_gender <- as.factor(studydat1$face_gender)
 # Test phase results
 
 testdat1 <- resultsdat %>%
-  subset(test_cal_time != 0 & rating_cal_time == 0) %>% # select test phase rows
+  subset(t_trial > 0 & lag(t_trial) < t_trial) %>% # select test phase rows
   select(c("id", starts_with("t_"))) %>% # select only test phase cols
   mutate(
     t_distractor = t_distractor == "Distractor",
@@ -189,16 +214,33 @@ testdat1$trial <- testdat1$trial + 30
 
 # Rating phase results
 
-ratingdat1 <- resultsdat %>%
-  subset(rating_cal_time != 0) %>% # select rating phase rows
-  select(c("id", starts_with("r_"))) %>% # select only rating phase cols
-  select(-r_face_onset, -r_rt, -r_trust, everything()) %>%
-  mutate(r_distractor = r_distractor == "Distractor")
+if (has_ratings) {
 
-names(ratingdat1) <- gsub("^r_", "", names(ratingdat1))
+  ratingdat1 <- resultsdat %>%
+    subset(rating_cal_time != 0) %>% # select rating phase rows
+    select(c("id", starts_with("r_"))) %>% # select only rating phase cols
+    select(-r_face_onset, -r_rt, -r_trust, everything()) %>%
+    mutate(r_distractor = r_distractor == "Distractor")
 
-ratingdat1$id <- as.factor(ratingdat1$id)
-ratingdat1$list <- as.factor(ratingdat1$list)
-ratingdat1$face_id <- as.factor(ratingdat1$face_id)
-ratingdat1$face_gender <- as.factor(ratingdat1$face_gender)
-ratingdat1$trial <- ratingdat1$trial + 90
+  names(ratingdat1) <- gsub("^r_", "", names(ratingdat1))
+  ratingdat1 <- ratingdat1 %>%
+    select(
+      id, list, trial, image, face_id, face_gender, distractor, face_onset,
+      rt, trust
+    )
+
+  ratingdat1$id <- as.factor(ratingdat1$id)
+  ratingdat1$list <- as.factor(ratingdat1$list)
+  ratingdat1$face_id <- as.factor(ratingdat1$face_id)
+  ratingdat1$face_gender <- as.factor(ratingdat1$face_gender)
+  ratingdat1$trial <- ratingdat1$trial + 90
+
+} else {
+
+  # Create empty dummy dataframe if no rating data
+  ratingdat1 <- testdat1 %>%
+    select(-c(response, correct_resp, accuracy)) %>%
+    mutate(trust = 0) %>%
+    subset(trial < 0)
+
+}

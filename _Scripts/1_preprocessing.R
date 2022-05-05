@@ -94,23 +94,23 @@ for (i in asc_ids) {
 }
 
 
-# Get ids of participants who have more or less than 150 trials
+# Get ids of participants who have more or less than the expected # of trials
 
 eye_trials <- map_df(asc_ids, function(i) {
   eyedat[[i]]$msg %>%
     summarize(id = i, blocks = length(unique(block)))
 })
-subset(eye_trials, blocks != 150)
+subset(eye_trials, blocks != trial_count)
 
 
-# Get ids of participants who have fixations on less than 150 trials
+# Get ids of participants who are missing fixations on some trials
 # (indicates calibration issues for participant)
 
 fix_trials <- map_df(asc_ids, function(i) {
   eyedat[[i]]$fix %>%
     summarize(id = i, blocks = length(unique(block)))
 })
-subset(fix_trials, blocks < 150)
+subset(fix_trials, blocks < trial_count)
 
 
 
@@ -202,11 +202,7 @@ for (i in unique(failed$id)) {
 
 # Remove missing trials (if any) from eye data
 
-stiminfo <- bind_rows(
-  select(studydat, c(id, trial)),
-  select(testdat, c(id, trial)),
-  select(ratingdat, c(id, trial))
-)
+stiminfo <- select(trialdat, c(id, trial))
 
 missing_trials <- map_df(unique(imginfo$id), function(i) {
   # Check for trial numbers in stimulus list but not task data for
@@ -230,7 +226,7 @@ eye_trials <- map_df(asc_ids, function(i) {
   eyedat[[i]]$msg %>%
     summarize(id = i, blocks = length(unique(block)))
 })
-subset(eye_trials, blocks != 150)
+subset(eye_trials, blocks != trial_count)
 
 
 # Identify eye events where face was actually on screen

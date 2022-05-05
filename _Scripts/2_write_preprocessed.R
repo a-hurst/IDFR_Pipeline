@@ -25,7 +25,6 @@ write_csv(last_validation_info, paste0(elinfo_path, "validation_info.csv"))
 
 ### Write out fixation and saccade data to .csvs for each participant ###
 
-
 dir.create(file.path("csv_out", "fixations"), showWarnings = FALSE)
 dir.create(file.path("csv_out", "saccades"), showWarnings = FALSE)
 
@@ -46,7 +45,9 @@ dir.create(file.path("csv_out", "task"), showWarnings = FALSE)
 
 write_csv(studydat1, paste0("./csv_out/task/", "taskdata_encoding.csv"))
 write_csv(testdat1, paste0("./csv_out/task/", "taskdata_recognition.csv"))
-write_csv(ratingdat1, paste0("./csv_out/task/", "taskdata_ratings.csv"))
+if (nrow(ratingdat1) > 0) {
+  write_csv(ratingdat1, paste0("./csv_out/task/", "taskdata_ratings.csv"))
+}
 
 
 ### Write out AOI area data ###
@@ -59,10 +60,11 @@ write_csv(aoi_areas, paste0("./csv_out/", "aoi_areas_per_image.csv"))
 dir.create(file.path("aoi_out"), showWarnings = FALSE)
 
 unique_faces <- subset(image_index, str_detect(image, "_Encoding"))$image
+img_path <- "../_Preprocessing/faces/_images"
 
 for (face in unique_faces) {
 
-  faceplot <- plot_face(face, "../_Faces/_images", landmarks, ovals, aoi_defs) +
+  faceplot <- plot_face(face, img_path, landmarks, ovals, aoi_defs) +
     labs(x = NULL, y = NULL) +
     theme(
       plot.title = element_blank(),
