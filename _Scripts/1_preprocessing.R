@@ -62,9 +62,14 @@ validation_info <- map_df(asc_ids, function(i) {
   val <- str_replace_all(val, val_regex, "")
 
   # Read sanitized validation summary lines into dataframe
+  phase <- case_when(
+    asc$msg$block[is_val] == 0.5 ~ "study",
+    asc$msg$block[is_val] == 30.5 ~ "test",
+    asc$msg$block[is_val] == 90.5 ~ "rating"
+  )
   df <- read_table(val, col_names = colnames, col_types = coltypes)
   df <- add_column(df, time = asc$msg$time[is_val], .before = 1)
-  df <- add_column(df, block = asc$msg$block[is_val], .before = 1)
+  df <- add_column(df, phase = phase, .before = 1)
   df <- add_column(df, id = i, .before = 1)
 
   df
@@ -74,14 +79,15 @@ validation_info$eyes <- as.factor(validation_info$eyes)
 validation_info$quality <- as.factor(validation_info$quality)
 
 recalibration_info <- validation_info %>%
-  # Get number of recalibrations for each block / id
-  group_by(id, block) %>%
+  # Get number of recalibrations for each phase / id
+  mutate(phase = factor(phase, levels = c("study", "test", "rating"))) %>%
+  group_by(id, phase) %>%
   summarize(calibrations = n()) %>%
   ungroup()
 
 last_validation_info <- validation_info %>%
-  # Get final validation for ecah block / id
-  group_by(id, block) %>%
+  # Get final validation for each phase / id
+  group_by(id, phase) %>%
   filter(row_number() == n()) %>%
   ungroup()
 
