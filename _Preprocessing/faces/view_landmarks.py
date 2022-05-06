@@ -10,6 +10,7 @@ from _mediapipe2dlib import LM68_ALL, LM68_EXT, LM68_EXT_NO_MOUTH
 # ] : Next image
 # [ : Previous image
 # \ : Cycle through detection stages
+# / : Save a copy of the image to the current folder
 # p : Print name of current image and current values of all parameters
 # a : Increase lower bound of Canny edge detection filter
 # z : Decrease lower bound of Canny edge detection filter
@@ -83,7 +84,7 @@ while testing:
             landmarks = results.multi_face_landmarks[0].landmark
             for j in range(len(landmarks)):
                 if j not in landmark_set:
-                    if j > 300 or not show_all:
+                    if not show_all:
                         continue
                 lx = int(landmarks[j].x * img.shape[1])
                 ly = int(landmarks[j].y * img.shape[0])
@@ -127,3 +128,6 @@ while testing:
         show_text = show_text != True
     elif key == 92: # \
         showtype += 1
+    elif key == 47: # /
+        outfile = "img_{0}.png".format(i)
+        cv2.imwrite(outfile, imglist[showtype % 4])
