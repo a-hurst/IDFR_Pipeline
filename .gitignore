@@ -7,3 +7,5 @@
 _Data/idfr*
 output/*
 !.gitignore
+!_Preprocessing/landmark_map.png
+!_Preprocessing/opencv_oval_detect.png
