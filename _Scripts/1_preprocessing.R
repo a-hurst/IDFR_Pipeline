@@ -63,9 +63,9 @@ validation_info <- map_df(asc_ids, function(i) {
 
   # Read sanitized validation summary lines into dataframe
   phase <- case_when(
-    asc$msg$block[is_val] == 0.5 ~ "study",
-    asc$msg$block[is_val] == 30.5 ~ "test",
-    asc$msg$block[is_val] == 90.5 ~ "rating"
+    asc$msg$block[is_val] < 30 ~ "study",
+    asc$msg$block[is_val] < 90 ~ "test",
+    asc$msg$block[is_val] < 150 ~ "rating"
   )
   df <- read_table(val, col_names = colnames, col_types = coltypes)
   df <- add_column(df, time = asc$msg$time[is_val], .before = 1)
