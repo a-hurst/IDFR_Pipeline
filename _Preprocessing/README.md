@@ -8,7 +8,7 @@ This script takes the full set of face stimuli for the study and extracts the pi
 
 Facial landmark detection is done using [MediaPipe's Face Mesh](https://google.github.io/mediapipe/solutions/face_mesh.html), which automatically identifies 468 unique landmarks on each face. A subset of those landmarks are then mapped to the [68 landmarks defined by the dlib model](https://www.researchgate.net/figure/The-68-landmarks-detected-by-dlib-library-This-image-was-created-by-Brandon-Amos-of-CMU_fig2_329392737), along with and additional 33 landmarks defining the countours of the forehead, eye regions, and sides of the nose. The indices of all 101 landmarks (0-100) are illustrated below (black = original dlib landmark, red = extension landmark):
 
-![landmark_map](landmark_map.png)
+<img src="https://github.com/a-hurst/IDFR_Pipeline/blob/main/_Preprocessing/landmark_map.png" alt="Landmark Map" width="600"/>
 
 The sizes and locations of the ovals containing the faces are extracted using OpenCV by 1) blurring out the white noise in the background, 2) using edge detection to detect all the contours in the image, and 3) finding the height, width and center point of the largest single contour in the image (i.e. the oval):
 
